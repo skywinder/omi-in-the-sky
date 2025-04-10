@@ -25,6 +25,7 @@ This README provides a quick setup guide for the Omi backend. For a comprehensiv
    - Mac: `brew install python`
    - Windows: `choco install python`
    - Nix envdir: It should be pre-installed
+   - **IMPORTANT:** The backend requires Python versions 3.9-3.12. Python 3.13 is not supported by some dependencies.
 
 5. Install `pip` if it doesn't exist (follow instructions on [pip installation page](https://pip.pypa.io/en/stable/installation/))
 
