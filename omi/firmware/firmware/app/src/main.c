@@ -11,6 +11,7 @@
 #include "storage.h"
 #include "speaker.h"
 #include "usb.h"
+#include "log_backend_fs.h"
 #define BOOT_BLINK_DURATION_MS 600
 #define BOOT_PAUSE_DURATION_MS 200
 #define VBUS_DETECT (1U << 20)
@@ -212,6 +213,17 @@ int main(void)
         return err;
     }
 
+    // Initialize filesystem log backend
+    LOG_PRINTK("\n");
+    LOG_INF("Initializing filesystem log backend...\n");
+#ifdef CONFIG_LOG_BACKEND_FS
+    err = log_backend_fs_init();
+    if (err)
+    {
+        LOG_ERR("Failed to initialize filesystem log backend (err %d)", err);
+        // Continue even if log backend fails - not critical
+    }
+#endif
     k_msleep(500);
 
     LOG_PRINTK("\n");

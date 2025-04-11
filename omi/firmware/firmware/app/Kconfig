@@ -19,6 +19,37 @@ config OMI_ENABLE_OFFLINE_STORAGE
         "Enable the offline storage support. Requires a SD Card."
 	default n
 
+# Add support for the filesystem logging backend
+config LOG_BACKEND_FS
+	bool "File system logging backend"
+	depends on LOG
+	depends on FILE_SYSTEM
+	depends on OMI_ENABLE_OFFLINE_STORAGE
+	help
+	  When enabled, backend will write log entries to files in the
+	  specified location.
+
+config LOG_BACKEND_FS_OVERWRITE
+	bool "Old logs overwrite"
+	depends on LOG_BACKEND_FS
+	default y
+	help
+	  When enabled, oldest log files will be overwritten when disk is full.
+
+config LOG_BACKEND_FS_FILE_SIZE
+	int "Size of a single log file in bytes"
+	depends on LOG_BACKEND_FS
+	default 16384
+	help
+	  Maximum size of a log file before a new one is created.
+
+config LOG_BACKEND_FS_DIR
+	string "Directory for log files"
+	depends on LOG_BACKEND_FS
+	default "/SD:/logs"
+	help
+	  Directory to which log files will be written to.
+
 config OMI_ENABLE_ACCELEROMETER
     bool "Accelerometer Support"
     help
