@@ -357,6 +357,7 @@ static void _transport_connected(struct bt_conn *conn, uint8_t err)
     if (err)
     {
         LOG_ERR("Failed to get connection info (err %d)", err);
+        play_haptic_milli(50); // Short haptic feedback for connection error
         bt_conn_unref(conn);
         return;
     }
@@ -556,6 +557,7 @@ static bool push_to_gatt(struct bt_conn *conn)
 
         if (retry_count >= max_retries) {
             LOG_ERR("Failed to send packet after %d retries", max_retries);
+            play_haptic_milli(100); // Medium haptic feedback for send failure
             return false;
         }
     }
@@ -755,6 +757,7 @@ int bt_off()
     if (err)
     {
         LOG_ERR("Failed to stop Bluetooth advertising %d", err);
+        play_haptic_milli(50); // Short haptic feedback for advertising stop error
     }
 
     // Disable Bluetooth
@@ -762,6 +765,7 @@ int bt_off()
     if (err)
     {
         LOG_ERR("Failed to disable Bluetooth %d", err);
+        play_haptic_milli(50); // Short haptic feedback for disable error
     }
 
     // Turn off other peripherals
@@ -800,6 +804,7 @@ int transport_start()
     if (err)
     {
         LOG_ERR("Transport bluetooth init failed (err %d)", err);
+        play_haptic_milli(100); // Medium haptic feedback for init failure
         return err;
     }
     LOG_INF("Transport bluetooth initialized");
@@ -809,6 +814,7 @@ int transport_start()
     if (!err)
     {
         LOG_INF("Accelerometer failed to activate\n");
+        play_haptic_milli(50); // Short haptic feedback for accelerometer error
     }
     else
     {
@@ -828,6 +834,7 @@ int transport_start()
     if (err)
     {
         LOG_ERR("Speaker failed to start");
+        play_haptic_milli(50); // Short haptic feedback for speaker error
         return 0;
     }
     LOG_INF("Speaker initialized");
@@ -845,6 +852,7 @@ int transport_start()
     if (err)
     {
         LOG_ERR("Transport advertising failed to start (err %d)", err);
+        play_haptic_milli(100); // Medium haptic feedback for advertising start error
         return err;
     }
     else
@@ -858,6 +866,7 @@ int transport_start()
     if (battErr)
     {
         LOG_ERR("Battery init failed (err %d)", battErr);
+        play_haptic_milli(50); // Short haptic feedback for battery error
     }
     else
     {
