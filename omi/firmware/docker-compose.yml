@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  nrf-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/workdir/project
+      - ncs-cache:/workdir/ncs
+    environment:
+      - ZEPHYR_TOOLCHAIN_VARIANT=zephyr
+    tty: true
+    stdin_open: true
+
+volumes:
+  ncs-cache:

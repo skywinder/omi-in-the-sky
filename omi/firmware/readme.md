@@ -10,6 +10,47 @@ pip3 install --user adafruit-nrfutil
 adafruit-nrfutil dfu genpkg --dev-type 0x0052 --dev-revision 0xCE68 --application zephyr.hex zephyr.zip
 ```
 
+### Building with Docker (nRF Connect SDK v2.7.0)
+
+We now provide a Docker-based build environment for building firmware using the nRF Connect SDK version 2.7.0.
+
+#### Prerequisites
+
+- Docker
+- docker-compose
+
+#### Building the firmware
+
+To build the firmware using Docker:
+
+```bash
+# Navigate to the firmware directory
+cd omi/firmware
+
+# Make the build script executable (if needed)
+chmod +x build-with-docker.sh
+
+# Build the default project (firmware/app) for the default board (xiao_nrf52840_ble_sense)
+./build-with-docker.sh
+
+# OR specify a custom project directory and board
+./build-with-docker.sh path/to/project board_name
+```
+
+The build artifacts will be available in the build directory after the process completes.
+
+#### Manually using the Docker container
+
+You can also run commands directly in the Docker container:
+
+```bash
+# Start the container with an interactive shell
+docker-compose run --rm nrf-builder
+
+# Inside the container, run:
+build-project.sh /workdir/project/firmware/app xiao_nrf52840_ble_sense
+```
+
 ### Upgrade firmware using UF2 file
 
 Download the latest version of the firmware ```xiao_nrf52840_ble_sense-XXXX.uf2```
