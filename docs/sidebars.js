@@ -33,7 +33,7 @@ const sidebars = {
       label: 'Usage Guide',
       collapsed: false,
       items: [
-        'usage/long_tap'
+        'usage/voice_commands'
       ]
     },
     {
@@ -82,7 +82,7 @@ const sidebars = {
            'developer/sdk/swift'
           ]
         },
-        
+
         'developer/Protocol',
         'developer/Contribution',
         {

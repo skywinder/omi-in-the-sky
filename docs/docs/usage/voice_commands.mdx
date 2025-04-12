@@ -1,12 +1,12 @@
 ---
-title: Long Tap Feature
-description: 'How to use the long tap (press and hold) functionality on Omi devices'
+title: Voice Command Feature
+description: 'How to use voice commands with your Omi device'
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Long Tap Functionality
+# Voice Command Functionality
 
 <Tabs>
 <TabItem value="users" label="For Users" default>
@@ -73,19 +73,10 @@ if (buttonState == 5 && _voiceCommandSession != null) {
 </TabItem>
 </Tabs>
 
-## Using Long Tap with Custom Integrations
+## Using Voice Commands with Custom Integrations
 
 Developers building custom integrations or apps for Omi can leverage the voice command capabilities. The backend processes all voice commands and can route them to appropriate handlers based on keyword detection.
 
 For information on building custom integrations that can be triggered by voice commands, see the [Apps and Integrations documentation](../developer/apps/Introduction).
-
-## Future Enhancements
-
-Future firmware updates may enhance the long tap functionality:
-
-- Customizable press duration
-- Multiple long press patterns for different actions
-- Visual feedback via LEDs in addition to haptic feedback
-- Enhanced voice recognition capabilities
 
 Check the [firmware release notes](https://github.com/BasedHardware/Omi/releases) for updates.
