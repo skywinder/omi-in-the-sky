@@ -31,6 +31,10 @@ extern uint32_t file_num_array[2];
 struct bt_conn *current_connection = NULL;
 uint16_t current_mtu = 0;
 uint16_t current_package_index = 0;
+
+// Add mutex to protect connection access
+K_MUTEX_DEFINE(conn_mutex);
+
 //
 // Internal
 //
@@ -121,7 +125,6 @@ void broadcast_accel(struct k_work *work_item);
 K_WORK_DELAYABLE_DEFINE(accel_work, broadcast_accel);
 
 void broadcast_accel(struct k_work *work_item) {
-
     sensor_sample_fetch_chan(lsm6dsl_dev, SENSOR_CHAN_ACCEL_XYZ);
     sensor_channel_get(lsm6dsl_dev, SENSOR_CHAN_ACCEL_X, &mega_sensor.a_x);
     sensor_channel_get(lsm6dsl_dev, SENSOR_CHAN_ACCEL_Y, &mega_sensor.a_y);
@@ -132,12 +135,19 @@ void broadcast_accel(struct k_work *work_item) {
     sensor_channel_get(lsm6dsl_dev, SENSOR_CHAN_GYRO_Y, &mega_sensor.g_y);
     sensor_channel_get(lsm6dsl_dev, SENSOR_CHAN_GYRO_Z, &mega_sensor.g_z);
 
-   //only time mega sensor is changed is through here (hopefully),  so no chance of race condition
-    int err = bt_gatt_notify(current_connection, &accel_service.attrs[1], &mega_sensor, sizeof(mega_sensor));
-    if (err)
-    {
-       LOG_ERR("Error updating Accelerometer data");
+    // Get connection safely
+    k_mutex_lock(&conn_mutex, K_FOREVER);
+    struct bt_conn *conn = current_connection ? bt_conn_ref(current_connection) : NULL;
+    k_mutex_unlock(&conn_mutex);
+
+    if (conn) {
+        int err = bt_gatt_notify(conn, &accel_service.attrs[1], &mega_sensor, sizeof(mega_sensor));
+        if (err) {
+            LOG_ERR("Error updating Accelerometer data");
+        }
+        bt_conn_unref(conn);
     }
+
     k_work_reschedule(&accel_work, K_MSEC(ACCEL_REFRESH_INTERVAL));
 }
 
@@ -363,11 +373,15 @@ static void _transport_connected(struct bt_conn *conn, uint8_t err)
 
     LOG_INF("bluetooth activated");
 
+
+    k_mutex_lock(&conn_mutex, K_FOREVER);
     if (current_connection != NULL) {
         bt_conn_unref(current_connection);
     }
     current_connection = bt_conn_ref(conn);
     current_mtu = info.le.data_len->tx_max_len;
+    k_mutex_unlock(&conn_mutex);
+
     LOG_INF("Transport connected");
     LOG_DBG("Interval: %d, latency: %d, timeout: %d", info.le.interval, info.le.latency, info.le.timeout);
     LOG_DBG("TX PHY %s, RX PHY %s", phy2str(info.le.phy->tx_phy), phy2str(info.le.phy->rx_phy));
@@ -385,11 +399,13 @@ static void _transport_disconnected(struct bt_conn *conn, uint8_t err)
 
     LOG_INF("Transport disconnected");
 
+    k_mutex_lock(&conn_mutex, K_FOREVER);
     if (current_connection != NULL) {
         bt_conn_unref(current_connection);
         current_connection = NULL;
     }
     current_mtu = 0;
+    k_mutex_unlock(&conn_mutex);
 }
 
 static bool _le_param_req(struct bt_conn *conn, struct bt_le_conn_param *param)
@@ -655,7 +671,18 @@ void pusher(void)
         //
         // Load current connection
         //
-        struct bt_conn *conn = current_connection;
+        struct bt_conn *conn = NULL;
+
+        // Get connection safely
+        k_mutex_lock(&conn_mutex, K_FOREVER);
+        if (current_connection) {
+            conn = bt_conn_ref(current_connection);
+        }
+        bool valid = (current_mtu >= MINIMAL_PACKET_SIZE) &&
+                     (conn != NULL) &&
+                     bt_gatt_is_subscribed(conn, &audio_service.attrs[1], BT_GATT_CCC_NOTIFY);
+        k_mutex_unlock(&conn_mutex);
+
         //updating the most recent file size is expensive!
         static bool file_size_updated = true;
         static bool connection_was_true = false;
@@ -676,25 +703,8 @@ void pusher(void)
 
             file_size_updated = true;
         }
-        if (conn)
-        {
-            conn = bt_conn_ref(conn);
-        }
-        bool valid = true;
-        if (current_mtu < MINIMAL_PACKET_SIZE)
-        {
-            valid = false;
-        }
-        else if (!conn)
-        {
-            valid = false;
-        }
-        else
-        {
-            valid = bt_gatt_is_subscribed(conn, &audio_service.attrs[1], BT_GATT_CCC_NOTIFY); // Check if subscribed
-        }
 
-        if (!valid  && !storage_is_on)
+        if (!valid && !storage_is_on)
         {
             bool result = false;
             if (file_num_array[1] < MAX_STORAGE_BYTES)
@@ -716,12 +726,8 @@ void pusher(void)
                 LOG_PRINTK("drawing\n");
              }
             }
-            else
-            {
-
-            }
         }
-        if (valid)
+        else if (valid)
         {
             bool sent = push_to_gatt(conn);
             if (!sent)
@@ -729,6 +735,7 @@ void pusher(void)
                 // k_sleep(K_MSEC(50));
             }
         }
+
         if (conn)
         {
             bt_conn_unref(conn);
@@ -744,11 +751,13 @@ extern struct bt_gatt_service storage_service;
 int bt_off()
 {
     // First disconnect any active connections
+    k_mutex_lock(&conn_mutex, K_FOREVER);
     if (current_connection != NULL) {
         bt_conn_disconnect(current_connection, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
         bt_conn_unref(current_connection);
         current_connection = NULL;
     }
+    k_mutex_unlock(&conn_mutex);
 
     // Stop advertising
     int err = bt_le_adv_stop();
@@ -875,11 +884,21 @@ int transport_start()
 
 struct bt_conn *get_current_connection()
 {
-    return current_connection;
+    struct bt_conn *conn = NULL;
+    k_mutex_lock(&conn_mutex, K_FOREVER);
+    if (current_connection) {
+        conn = bt_conn_ref(current_connection);
+    }
+    k_mutex_unlock(&conn_mutex);
+    return conn;
 }
 
 int broadcast_audio_packets(uint8_t *buffer, size_t size)
 {
+    if (buffer == NULL) {
+        return -1;
+    }
+
     int retry_count = 0;
     const int max_retries = 3;
 
