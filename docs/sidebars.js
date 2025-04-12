@@ -30,6 +30,14 @@ const sidebars = {
     },
     {
       type: 'category',
+      label: 'Usage Guide',
+      collapsed: false,
+      items: [
+        'usage/long_tap'
+      ]
+    },
+    {
+      type: 'category',
       label: 'Developer',
       items: [
         {

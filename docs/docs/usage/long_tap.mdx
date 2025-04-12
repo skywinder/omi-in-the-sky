@@ -1,0 +1,91 @@
+---
+title: Long Tap Feature
+description: 'How to use the long tap (press and hold) functionality on Omi devices'
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Long Tap Functionality
+
+<Tabs>
+<TabItem value="users" label="For Users" default>
+
+## Basic Usage
+
+1. **Press and hold** the button for 1+ second
+2. Feel haptic feedback
+3. **Speak** your command while holding
+4. **Release** when finished
+5. Wait for second haptic feedback and check app for response
+
+### Tips
+- Hold the button for the entire duration of your command
+- Wait for haptic feedback before speaking
+- Speak clearly at normal volume
+
+</TabItem>
+<TabItem value="developers" label="For Developers">
+
+## Implementation Overview
+
+### Firmware
+- Long press detection: Button held ≥ 1000ms (1 second)
+- Detection in `src/button.c`
+- LONG_TAP (value 3) notification sent via BLE
+- BUTTON_RELEASE (value 5) sent when released
+
+```c
+// Time constants
+#define LONG_PRESS_TIME    1000 // 1000 ms for long press
+
+// Detection
+if (btn_is_pressed && (current_time - btn_press_start_time)*BUTTON_CHECK_INTERVAL >= LONG_PRESS_TIME) {
+    event = BUTTON_EVENT_LONG_PRESS;
+}
+```
+
+### App Implementation
+- Handled in `CaptureProvider`
+- On buttonState 3: Start voice command session
+- During session: Collect audio data
+- On buttonState 5: Process collected audio
+
+```dart
+// Start recording on long press
+if (buttonState == 3 && _voiceCommandSession == null) {
+  _voiceCommandSession = DateTime.now();
+  _commandBytes = [];
+  _watchVoiceCommands(deviceId, _voiceCommandSession!);
+  _playSpeakerHaptic(deviceId, 1);
+}
+
+// Process on release
+if (buttonState == 5 && _voiceCommandSession != null) {
+  _processVoiceCommandBytes(deviceId, data);
+}
+```
+
+### Backend
+- Audio sent to server via `${Env.apiBaseUrl}v1/voice-messages` endpoint
+- Processed command results returned to app
+
+</TabItem>
+</Tabs>
+
+## Using Long Tap with Custom Integrations
+
+Developers building custom integrations or apps for Omi can leverage the voice command capabilities. The backend processes all voice commands and can route them to appropriate handlers based on keyword detection.
+
+For information on building custom integrations that can be triggered by voice commands, see the [Apps and Integrations documentation](../developer/apps/Introduction).
+
+## Future Enhancements
+
+Future firmware updates may enhance the long tap functionality:
+
+- Customizable press duration
+- Multiple long press patterns for different actions
+- Visual feedback via LEDs in addition to haptic feedback
+- Enhanced voice recognition capabilities
+
+Check the [firmware release notes](https://github.com/BasedHardware/Omi/releases) for updates.
