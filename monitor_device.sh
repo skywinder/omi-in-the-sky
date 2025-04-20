@@ -1,7 +1,25 @@
 #!/bin/bash
 
 # Device path to monitor
-DEVICE="/dev/tty.usbmodem1101"
+devices=(/dev/tty.usb*)
+if [ ${#devices[@]} -eq 0 ]; then
+    echo "No devices matching /dev/tty.usb* found. Exiting."
+    exit 1
+elif [ ${#devices[@]} -eq 1 ]; then
+    DEVICE=${devices[0]}
+    echo "Using device: $DEVICE"
+else
+    echo "Multiple devices found:"
+    select d in "${devices[@]}"; do
+        if [ -n "$d" ]; then
+            DEVICE="$d"
+            echo "Selected device: $DEVICE"
+            break
+        else
+            echo "Invalid selection. Please try again."
+        fi
+    done
+fi
 BAUD_RATE=115200
 LOG_DIR="logs"
 LOG_FILE="$LOG_DIR/device.log" # Single log file
