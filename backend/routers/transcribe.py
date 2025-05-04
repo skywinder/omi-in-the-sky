@@ -22,6 +22,7 @@ from models.transcript_segment import Translation
 from utils.apps import is_audio_bytes_app_enabled
 from utils.conversations.location import get_google_maps_location
 from utils.conversations.process_conversation import process_conversation, retrieve_in_progress_conversation
+from utils.other.task import safe_create_task
 from utils.plugins import trigger_external_integrations
 from utils.stt.streaming import *
 from utils.stt.streaming import get_stt_service_for_language, STTService
@@ -40,13 +41,19 @@ router = APIRouter()
 async def _listen(
         websocket: WebSocket, uid: str, language: str = 'en', sample_rate: int = 8000, codec: str = 'pcm8',
         channels: int = 1, include_speech_profile: bool = True, stt_service: STTService = None,
-        including_combined_segments: bool = False
+        including_combined_segments: bool = False,
 ):
     print('_listen', uid, language, sample_rate, codec, include_speech_profile, stt_service)
 
     if not uid or len(uid) <= 0:
         await websocket.close(code=1008, reason="Bad uid")
         return
+
+    # Frame size, codec
+    frame_size: int = 160
+    if codec == "opus_fs320":
+        codec = "opus"
+        frame_size = 320
 
     # Convert 'auto' to 'multi' for consistency
     language = 'multi' if language == 'auto' else language
@@ -330,7 +337,7 @@ async def _listen(
                     async def deepgram_socket_send(data):
                         return deepgram_socket.send(data)
 
-                    asyncio.create_task(send_initial_file_path(file_path, deepgram_socket_send))
+                    safe_create_task(send_initial_file_path(file_path, deepgram_socket_send))
 
             # SONIOX
             elif stt_service == STTService.soniox:
@@ -357,7 +364,7 @@ async def _listen(
                         language_hints=hints
                     )
 
-                    asyncio.create_task(send_initial_file_path(file_path, soniox_socket.send))
+                    safe_create_task(send_initial_file_path(file_path, soniox_socket.send))
                     print('speech_profile soniox duration', speech_profile_duration, uid)
             # SPEECHMATICS
             elif stt_service == STTService.speechmatics:
@@ -365,7 +372,7 @@ async def _listen(
                     stream_transcript, sample_rate, stt_language, preseconds=speech_profile_duration
                 )
                 if speech_profile_duration:
-                    asyncio.create_task(send_initial_file_path(file_path, speechmatics_socket.send))
+                    safe_create_task(send_initial_file_path(file_path, speechmatics_socket.send))
                     print('speech_profile speechmatics duration', speech_profile_duration, uid)
 
         except Exception as e:
@@ -637,7 +644,7 @@ async def _listen(
 
                 # Send to external trigger
                 if transcript_send is not None:
-                    transcript_send(updates_segments,current_conversation_id)
+                    transcript_send([segment.dict() for segment in transcript_segments], current_conversation_id)
 
                 # Translate
                 if translation_enabled:
@@ -677,7 +684,7 @@ async def _listen(
             while websocket_active:
                 data = await websocket.receive_bytes()
                 if codec == 'opus' and sample_rate == 16000:
-                    data = decoder.decode(bytes(data), frame_size=160)
+                    data = decoder.decode(bytes(data), frame_size=frame_size)
                     # audio_data.extend(data)
 
                 # STT
