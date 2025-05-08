@@ -160,9 +160,7 @@ app/lib/env/prod_env.g.dart
 /backend/scripts/stt/pretrained_models
 /backend/scripts/stt/results
 /backend/scripts/stt/diarization.json
-
 /backend/syncing/*
-
 /docs/.docusaurus
 
 
@@ -185,7 +183,6 @@ web-report/
 
 lefthook.yml
 omiGlass/.expo
-env_backups/*
 
 # Logs
 /backend/logs/
