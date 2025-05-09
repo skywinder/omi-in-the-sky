@@ -44,7 +44,38 @@ To build and deploy the app to an iPhone so it can run independently from your l
    ```
    This will install the app directly to your connected iPhone.
 
+3. **Build and deploy in a single command:**
+   ```bash
+   flutter build ios --flavor dev --release && ios-deploy --bundle build/ios/iphoneos/Runner.app
+   ```
+
+   Prerequisites:
+   - Ensure your iPhone is connected via USB
+   - Install ios-deploy if not already installed: `brew install ios-deploy`
+   - Make sure your iPhone is trusted on your Mac
+   - Verify your development certificate is valid and provisioning profiles are set up
+
 Once installed, the app will run on your iPhone independently from your development machine.
+
+### Attaching to Running Process
+
+To debug an already running app on your device:
+
+1. Find the process ID of your running app:
+   ```bash
+   flutter devices
+   ```
+
+2. Attach the debugger to the running app:
+   ```bash
+   flutter attach --device-id=<DEVICE_ID>
+   ```
+
+3. Once attached, you can:
+   - Use hot reload (press 'r')
+   - Use hot restart (press 'R')
+   - Access debug information
+   - Set breakpoints if using an IDE like VS Code or Android Studio
 
 ## Need Help?
 
