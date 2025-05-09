@@ -19,4 +19,8 @@ COPY --from=builder /opt/venv /opt/venv
 COPY . .
 
 EXPOSE 8000
+<<<<<<< HEAD
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-config", "logging_config.json"]
+=======
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+>>>>>>> feature/logging
