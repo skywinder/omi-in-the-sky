@@ -9,3 +9,9 @@ services:
     env_file:
       - .dev.env
     restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - PYTHONPATH=/app
+      - LD_LIBRARY_PATH=/usr/local/lib
+      - LIBRARY_PATH=/usr/local/lib
